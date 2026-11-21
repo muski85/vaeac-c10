@@ -30,7 +30,9 @@ def ae(original, imputed, incomplete, is_cat):
             continue
         miss = incomplete[c].isna().values
         n += int(miss.sum())
-        hits += int((original[c].astype(str).values[miss] == imputed[c].astype(str).values[miss]).sum())
+        truth = original[c].astype(str).str.strip().values[miss]      # strip: ignore stray spaces
+        guess = imputed[c].astype(str).str.strip().values[miss]
+        hits += int((truth == guess).sum())
     return None if n == 0 else hits / n
 
 

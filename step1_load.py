@@ -45,6 +45,11 @@ def _read(path, header):
         df = pd.read_csv(path, header=header, sep="\t")
     else:
         raise ValueError(f"Unsupported file type: {ext}")
+    # Text cells: drop stray leading/trailing spaces (the Splice ORIGINAL file stores " G"
+    # where the incomplete files store "G"; without this the two never match).
+    for c in df.columns:
+        if df[c].dtype == object or str(df[c].dtype) in ("str", "string"):
+            df[c] = df[c].map(lambda v: v.strip() if isinstance(v, str) else v)
     # Some files mark missing values with '?' or blank strings; treat them as missing too.
     df = df.replace({"?": np.nan, "": np.nan, " ": np.nan})
     return df
