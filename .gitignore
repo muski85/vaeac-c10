@@ -5,3 +5,8 @@ results/plots/
 results/histories/
 *.zip
 vaeac_cache/.vscode/
+demo/
+.vscode/
+__pycache__/demo/
+.vscode/
+__pycache__/

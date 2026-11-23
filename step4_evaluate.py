@@ -118,21 +118,48 @@ def plot_imputed_vs_true(original, imputed, incomplete, is_cat, path, title=""):
 
 
 def plot_rate_curves(results, path, metric="NRMS"):
-    """Average metric per missing rate, VAEAC vs baseline, one line pair per dataset."""
+    """Small multiples: one panel per dataset, VAEAC vs mean/mode by missing rate.
+
+    Each panel shows the metric averaged over that dataset's 11 patterns at each rate.
+    Panels have their own y-scale, so datasets with small values are still readable.
+    """
+    import math
     plt = _plt()
     r = results.dropna(subset=[metric])
     if r.empty:
         return False
-    fig, ax = plt.subplots(figsize=(6, 4), dpi=150)
-    for ds, g in r.groupby("dataset"):
-        a = g.groupby("rate")[[metric, metric + "_meanmode"]].mean()
-        line, = ax.plot(a.index, a[metric], marker="o", label=f"{ds} VAEAC")
-        ax.plot(a.index, a[metric + "_meanmode"], marker="o", linestyle="--",
-                color=line.get_color(), label=f"{ds} mean/mode")
-    ax.set_xlabel("missing rate (%)")
-    ax.set_ylabel(metric + (" (lower is better)" if metric == "NRMS" else " (higher is better)"))
-    ax.legend(fontsize=7)
-    fig.tight_layout()
+    blue, orange, ink, muted, grid = "#2a78d6", "#eb6834", "#0b0b0b", "#52514e", "#e4e3df"
+    datasets = sorted(r["dataset"].unique(), key=str.lower)
+    cols = 5 if len(datasets) > 8 else min(len(datasets), 4)
+    rows = math.ceil(len(datasets) / cols)
+    fig, axes = plt.subplots(rows, cols, figsize=(3.2 * cols, 2.5 * rows + 0.9), dpi=150, squeeze=False)
+    for ax, ds in zip(axes.flat, datasets):
+        a = r[r["dataset"] == ds].groupby("rate")[[metric, metric + "_meanmode"]].mean().sort_index()
+        x = [str(int(v)) for v in a.index]
+        ax.plot(x, a[metric], color=blue, linewidth=2, marker="o", markersize=5, label="VAEAC")
+        ax.plot(x, a[metric + "_meanmode"], color=orange, linewidth=2, linestyle="--", marker="o",
+                markersize=5, label="mean/mode")
+        ax.set_title(ds, fontsize=10, color=ink, loc="left")
+        ax.tick_params(colors=muted, labelsize=8)
+        ax.grid(axis="y", color=grid, linewidth=0.8)
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+        for side in ("left", "bottom"):
+            ax.spines[side].set_color(grid)
+    for ax in list(axes.flat)[len(datasets):]:
+        ax.axis("off")
+    for ax in axes[-1]:
+        ax.set_xlabel("missing rate (%)", fontsize=8, color=muted)
+    for ax in axes[:, 0]:
+        ax.set_ylabel(metric, fontsize=8, color=muted)
+    better = "lower is better" if metric == "NRMS" else "higher is better"
+    fig.suptitle(f"{metric} by missing rate, per dataset ({better}; average over the 11 patterns)",
+                 fontsize=12, color=ink, x=0.01, ha="left", y=0.995)
+    handles, labels = axes.flat[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper right", ncol=2, frameon=False, fontsize=10,
+               bbox_to_anchor=(0.995, 1.0))
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     fig.savefig(path)
     plt.close(fig)
     return True

@@ -12,11 +12,14 @@ All **1,144 files** (26 datasets × 11 missingness patterns × 4 rates) are impu
 
 | | VAEAC | mean/mode baseline | VAEAC better on |
 |---|---|---|---|
-| Average NRMS (numerical, lower is better) | **0.118** | 0.146 | 802 of 924 files |
-| Average AE (categorical, higher is better) | **0.732** | 0.534 | 389 of 406 files |
+| Average NRMS (numerical, lower is better) | **0.118** | 0.146 | 799 of 924 files |
+| Average AE (categorical, higher is better) | **0.730** | 0.534 | 388 of 406 files |
 
 Weakest datasets: Credit, Difdoug and KDD (NRMS about level with mean/mode).
 Per-dataset, per-pattern and per-rate numbers are in `results/summary/`.
+
+All results were produced on one machine with a fixed seed (0), so re-running a file on that
+machine reproduces its table value exactly (e.g. Wine_C_20: NRMS 0.1304 in the table and in a fresh run).
 
 ## Files
 
@@ -31,7 +34,7 @@ Per-dataset, per-pattern and per-rate numbers are in `results/summary/`.
 | `summarize.py` | reporting | Summary tables and charts → `results/summary/`. |
 | `recompute_ae.py` | reporting | Re-scores saved imputed files without re-running the imputation. |
 | `benchmark_complexity.py` | complexity study | Times training and imputation while changing rows, features and network width one at a time. |
-| `run_small.bat`, `test_one.bat` | Windows shortcuts | Double-click to run (paths inside may need editing). |
+| `demo.py` | live demo | Impute one file and show VAEAC vs mean/mode plus original-vs-imputed cells; or re-score a saved file. |
 
 ## Setup (once)
 
@@ -44,6 +47,24 @@ python -m pip install --user pandas openpyxl matplotlib numpy
 
 The course datasets are **not** in this repo. Use your own copy and point `ROOT` at the folder
 that contains `Incomplete Datasets Without Labels` and `Original Datasets Without Labels`.
+
+## Live demo (`demo.py`)
+
+The data folder is set once at the top of `demo.py` (`DATA_ROOT`); nothing long to type.
+
+```
+python demo.py                      # asks: dataset, pattern, rate
+python demo.py Wine C 20            # fresh run: trains VAEAC, imputes, scores
+python demo.py check Wine C 20      # re-scores the SAVED file in results/imputed (no training, a few seconds)
+python demo.py file                 # any incomplete file (and its original), e.g. one the lecturer brings
+```
+
+* **Fresh run** shows the method working live: NRMS / AE vs mean/mode, then missing cells with the
+  original value, VAEAC's value and the mean/mode value side by side. Output goes to `demo/`;
+  `results/` is never touched.
+* **check** compares our submitted imputed file with the original — the same check the lecturer
+  makes — and prints exactly the table value.
+* Names are not case-sensitive (`iris c 10` works). Stick to small datasets live; KDD takes minutes.
 
 ## Run (Git Bash)
 
@@ -62,9 +83,8 @@ python main.py --input "his_incomplete.xlsx" --original "his_original.xlsx" --ou
 
 In cmd use `set ROOT=...` and `"%ROOT%"`; in PowerShell `$ROOT = "..."` and `$ROOT`.
 
-**Live demo:** use a fresh `--out` folder (e.g. `--out demo`). `main.py` skips every file already
-listed in that folder's `results.csv`, so running into `results` would do nothing.
-The same skipping makes an interrupted run safe to restart.
+`main.py` skips every file already listed in the `--out` folder's `results.csv`, so an interrupted
+run is safe to restart (and running into `results` again does nothing — use `demo.py` to show a file).
 
 **Large datasets** (Letter, Adult, C4, KDD):
 
@@ -80,7 +100,7 @@ python fill_table.py --table "$ROOT/Table-NRMS-AE.xlsx" --results results/result
 python summarize.py
 ```
 
-**Compare imputed values with the original, cell by cell:**
+**Compare imputed values with the original, cell by cell** (or just use `demo.py`):
 
 ```
 D=Iris; F=Iris_C_10
